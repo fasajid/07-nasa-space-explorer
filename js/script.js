@@ -15,6 +15,8 @@ const installPrompt = document.getElementById('installPrompt');
 const installPromptMessage = document.getElementById('installPromptMessage');
 const installAppButton = document.getElementById('installAppButton');
 const dismissInstallPromptButton = document.getElementById('dismissInstallPromptButton');
+const notificationStatus = document.getElementById('notificationStatus');
+const requestNotificationButton = document.getElementById('requestNotificationButton');
 const nasaApiKey = 'DEMO_KEY';
 let deferredInstallPrompt;
 const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
@@ -100,6 +102,49 @@ window.addEventListener('appinstalled', () => {
 	installPrompt.hidden = true;
 	deferredInstallPrompt = null;
 });
+
+function updateNotificationPermissionStatus() {
+	if (!('Notification' in window)) {
+		notificationStatus.textContent = 'Notifications are not supported by this browser.';
+		requestNotificationButton.hidden = true;
+		return;
+	}
+
+	if (Notification.permission === 'granted') {
+		notificationStatus.textContent = 'Notifications are allowed for Space Explorer.';
+		requestNotificationButton.hidden = true;
+	} else if (Notification.permission === 'denied') {
+		notificationStatus.textContent = 'Notifications are blocked. Change this site’s permission in your browser settings.';
+		requestNotificationButton.disabled = true;
+	} else {
+		notificationStatus.textContent = 'Allow Space Explorer to show notifications on this device.';
+	}
+}
+
+async function requestNotificationPermission() {
+	requestNotificationButton.disabled = true;
+
+	try {
+		const permission = await Notification.requestPermission();
+
+		if (permission === 'granted') {
+			notificationStatus.textContent = 'Notifications are allowed for Space Explorer.';
+			requestNotificationButton.hidden = true;
+		} else if (permission === 'denied') {
+			notificationStatus.textContent = 'Notifications are blocked. Change this site’s permission in your browser settings.';
+		} else {
+			notificationStatus.textContent = 'Notification permission was not granted.';
+			requestNotificationButton.disabled = false;
+		}
+	} catch (error) {
+		console.error('Could not request notification permission:', error);
+		notificationStatus.textContent = 'Could not request notification permission. Please try again.';
+		requestNotificationButton.disabled = false;
+	}
+}
+
+updateNotificationPermissionStatus();
+requestNotificationButton.addEventListener('click', requestNotificationPermission);
 
 // Store a few fun space facts and show one at random when the page loads.
 const spaceFacts = [
