@@ -10,7 +10,96 @@ const modalTitle = document.getElementById('modalTitle');
 const modalDate = document.getElementById('modalDate');
 const modalExplanation = document.getElementById('modalExplanation');
 const spaceFact = document.getElementById('spaceFact');
+const connectionStatus = document.getElementById('connectionStatus');
+const installPrompt = document.getElementById('installPrompt');
+const installPromptMessage = document.getElementById('installPromptMessage');
+const installAppButton = document.getElementById('installAppButton');
+const dismissInstallPromptButton = document.getElementById('dismissInstallPromptButton');
 const nasaApiKey = 'DEMO_KEY';
+let deferredInstallPrompt;
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+	(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+function updateConnectionStatus() {
+	connectionStatus.hidden = navigator.onLine;
+
+	if (!navigator.onLine) {
+		connectionStatus.textContent = 'You are offline. You can still view space images you loaded before.';
+	}
+}
+
+updateConnectionStatus();
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+
+function isAppInstalled() {
+	return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+function showInstallPrompt(message, showInstallButton) {
+	installPromptMessage.textContent = message;
+	installAppButton.hidden = !showInstallButton;
+	installPrompt.hidden = false;
+}
+
+if (!isAppInstalled()) {
+	if (isIos) {
+		showInstallPrompt('Add Space Explorer to your Home Screen for quick access.', true);
+	} else {
+		showInstallPrompt('Add Space Explorer to your device for quick access.', true);
+	}
+	installAppButton.textContent = 'Install app';
+} else {
+	installPrompt.hidden = true;
+}
+
+window.addEventListener('beforeinstallprompt', (event) => {
+	event.preventDefault();
+	deferredInstallPrompt = event;
+
+	if (!isAppInstalled()) {
+		showInstallPrompt('Install the app for quick access from your home screen.', true);
+		installAppButton.textContent = 'Install app';
+	}
+});
+
+installAppButton.addEventListener('click', async () => {
+	if (!deferredInstallPrompt) {
+		installPromptMessage.textContent = isIos
+			? 'Tap Share in your browser, then choose “Add to Home Screen.”'
+			: 'Open your browser menu and choose “Install app” or “Add to Home Screen.”';
+		return;
+	}
+
+	const installEvent = deferredInstallPrompt;
+	deferredInstallPrompt = null;
+	installAppButton.disabled = true;
+
+	try {
+		installEvent.prompt();
+		const { outcome } = await installEvent.userChoice;
+
+		if (outcome === 'accepted' || isAppInstalled()) {
+			installPrompt.hidden = true;
+		} else if (outcome === 'dismissed') {
+			installPromptMessage.textContent = 'Install was cancelled. You can try again from your browser menu.';
+		}
+	} catch (error) {
+		console.error('Could not open the app install prompt:', error);
+		installPromptMessage.textContent = 'Open your browser menu and choose “Install app” or “Add to Home Screen.”';
+	} finally {
+		installAppButton.disabled = false;
+	}
+});
+
+dismissInstallPromptButton.addEventListener('click', () => {
+	installPrompt.hidden = true;
+});
+
+window.addEventListener('appinstalled', () => {
+	installPrompt.hidden = true;
+	deferredInstallPrompt = null;
+});
 
 // Store a few fun space facts and show one at random when the page loads.
 const spaceFacts = [

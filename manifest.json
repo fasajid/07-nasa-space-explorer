@@ -1,0 +1,15 @@
+{
+  "name": "NASA Space Explorer",
+  "short_name": "Space Explorer",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070d18",
+  "theme_color": "#0b3d91",
+  "icons": [
+    {
+      "src": "img/nasa-worm-logo.png",
+      "type": "image/png",
+      "sizes": "2880x804"
+    }
+  ]
+}
