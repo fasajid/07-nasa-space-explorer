@@ -8,23 +8,35 @@ const earliestDate = '1995-06-16';
 const today = new Date().toISOString().split('T')[0];
 
 function setupDateInputs(startInput, endInput) {
-  // Restrict date selection range from NASA's first image to today
+  // Keep the selected range to nine dates while staying inside NASA's archive.
+  const daysInRange = 9;
+  const daysOffset = daysInRange - 1;
+
+  function changeDateByDays(date, numberOfDays) {
+    const updatedDate = new Date(`${date}T00:00:00Z`);
+    updatedDate.setUTCDate(updatedDate.getUTCDate() + numberOfDays);
+    return updatedDate.toISOString().split('T')[0];
+  }
+
+  const earliestEndDate = changeDateByDays(earliestDate, daysOffset);
+  const latestStartDate = changeDateByDays(today, -daysOffset);
+
   startInput.min = earliestDate;
-  startInput.max = today;
-  endInput.min = earliestDate;
+  startInput.max = latestStartDate;
+  endInput.min = earliestEndDate;
   endInput.max = today;
 
-  // Default: Show the most recent 9 days of space images
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 8); // minus 8 because it includes today
-  startInput.value = lastWeek.toISOString().split('T')[0];
+  // Default to the latest nine available dates.
+  startInput.value = latestStartDate;
   endInput.value = today;
 
-  // Automatically adjust end date to show exactly 9 days of images
+  // Move the end date when the start date changes.
   startInput.addEventListener('change', () => {
-    const startDate = new Date(startInput.value);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 8);
-    endInput.value = endDate > new Date(today) ? today : endDate.toISOString().split('T')[0];
+    endInput.value = changeDateByDays(startInput.value, daysOffset);
+  });
+
+  // Move the start date when the end date changes.
+  endInput.addEventListener('change', () => {
+    startInput.value = changeDateByDays(endInput.value, -daysOffset);
   });
 }
